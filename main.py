@@ -20,8 +20,60 @@ from PySide6.QtWidgets import (
     QProgressBar, QMessageBox, QGroupBox, QCheckBox, QSpinBox,
     QDoubleSpinBox, QSlider, QComboBox, QTextEdit, QSplitter, QStyleFactory
 )
-from PySide6.QtCore import Qt, QThread, Signal, QTimer, QSize
-from PySide6.QtGui import QFont, QIcon, QPalette, QColor
+from PySide6.QtCore import Qt, QThread, Signal, QTimer, QSize, QMimeData, QUrl
+from PySide6.QtGui import QFont, QIcon, QPalette, QColor, QDragEnterEvent, QDropEvent
+
+
+class DragDropListWidget(QListWidget):
+    """支持拖放的文件列表控件"""
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAcceptDrops(True)
+        self.setDragDropMode(QListWidget.DragDropMode.DropOnly)
+        self.setSelectionMode(QListWidget.SelectionMode.ExtendedSelection)
+        
+    def dragEnterEvent(self, event: QDragEnterEvent):
+        """拖拽进入事件"""
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+    
+    def dragMoveEvent(self, event):
+        """拖拽移动事件"""
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+    
+    def dropEvent(self, event: QDropEvent):
+        """放置事件"""
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+            urls = event.mimeData().urls()
+            
+            # 获取父窗口以调用添加文件的方法
+            parent = self.parent()
+            while parent and not hasattr(parent, 'add_dropped_files'):
+                parent = parent.parent()
+            
+            if parent and hasattr(parent, 'add_dropped_files'):
+                file_paths = []
+                folder_paths = []
+                
+                for url in urls:
+                    file_path = url.toLocalFile()
+                    if os.path.exists(file_path):
+                        if os.path.isfile(file_path):
+                            file_paths.append(file_path)
+                        elif os.path.isdir(file_path):
+                            folder_paths.append(file_path)
+                
+                # 调用父窗口的方法处理拖放的文件和文件夹
+                parent.add_dropped_files(file_paths, folder_paths)
+        else:
+            event.ignore()
 
 
 class ConverterWorker(QThread):
@@ -200,12 +252,12 @@ class MainWindow(QMainWindow):
         
         file_layout.addLayout(button_layout)
         
-        # 文件列表
-        self.file_list = QListWidget()
+        # 文件列表 - 支持拖放
+        self.file_list = DragDropListWidget()
         self.file_list.setMinimumHeight(200)
         self.file_list.setStyleSheet("""
             QListWidget {
-                border: 1px solid #444444;
+                border: 2px dashed #555555;
                 border-radius: 5px;
                 padding: 5px;
                 background-color: #2d2d2d;
@@ -223,6 +275,30 @@ class MainWindow(QMainWindow):
                 color: white;
             }
         """)
+        
+        # 添加拖放提示标签
+        drop_hint_label = QLabel("📁 拖放文件或文件夹到这里")
+        drop_hint_label.setAlignment(Qt.AlignCenter)
+        drop_hint_label.setStyleSheet("""
+            QLabel {
+                color: #888888;
+                font-style: italic;
+                padding: 20px;
+                background-color: rgba(45, 45, 45, 0.5);
+                border-radius: 5px;
+                margin: 5px;
+            }
+        """)
+        
+        # 创建容器widget来显示提示标签
+        list_container = QWidget()
+        list_layout = QVBoxLayout(list_container)
+        list_layout.setContentsMargins(0, 0, 0, 0)
+        list_layout.setSpacing(0)
+        list_layout.addWidget(self.file_list)
+        list_layout.addWidget(drop_hint_label)
+        
+        file_layout.addWidget(list_container)
         file_layout.addWidget(self.file_list)
         
         file_group.setLayout(file_layout)
@@ -613,7 +689,7 @@ class MainWindow(QMainWindow):
             self,
             "选择音频文件",
             str(Path.home()),
-            "音频文件 (*.mp3 *.wav *.flac *.m4a *.aac *.wma);;所有文件 (*.*)"
+            "音频文件 (*.mp3 *.wav *.flac *.m4a *.aac *.wma *.ogg *.opus);;所有文件 (*.*)"
         )
         
         if files:
@@ -636,7 +712,7 @@ class MainWindow(QMainWindow):
         
         if folder:
             # 支持的音频格式
-            audio_extensions = {'.mp3', '.wav', '.flac', '.m4a', '.aac', '.wma', '.ogg'}
+            audio_extensions = {'.mp3', '.wav', '.flac', '.m4a', '.aac', '.wma', '.ogg', '.opus'}
             added_count = 0
             
             for root, _, files in os.walk(folder):
@@ -657,6 +733,67 @@ class MainWindow(QMainWindow):
         self.files_to_convert.clear()
         self.file_list.clear()
         self.update_status("文件列表已清空")
+    
+    def add_dropped_files(self, file_paths, folder_paths):
+        """处理拖放的文件和文件夹
+        
+        Args:
+            file_paths: 拖放的文件路径列表
+            folder_paths: 拖放的文件夹路径列表
+        """
+        total_added = 0
+        
+        # 处理拖放的文件
+        for file_path in file_paths:
+            if file_path not in self.files_to_convert:
+                # 检查文件扩展名
+                file_ext = Path(file_path).suffix.lower()
+                audio_extensions = {'.mp3', '.wav', '.flac', '.m4a', '.aac', '.wma', '.ogg', '.opus'}
+                
+                if file_ext in audio_extensions:
+                    self.files_to_convert.append(file_path)
+                    item = QListWidgetItem(f"📄 {os.path.basename(file_path)}")
+                    item.setData(Qt.UserRole, file_path)
+                    self.file_list.addItem(item)
+                    total_added += 1
+                else:
+                    # 非音频文件，显示为灰色
+                    item = QListWidgetItem(f"❌ {os.path.basename(file_path)} (不支持)")
+                    item.setForeground(QColor("#888888"))
+                    self.file_list.addItem(item)
+        
+        # 处理拖放的文件夹
+        for folder_path in folder_paths:
+            # 支持的音频格式
+            audio_extensions = {'.mp3', '.wav', '.flac', '.m4a', '.aac', '.wma', '.ogg', '.opus'}
+            folder_added = 0
+            
+            for root, _, files in os.walk(folder_path):
+                for file in files:
+                    if Path(file).suffix.lower() in audio_extensions:
+                        file_path = os.path.join(root, file)
+                        if file_path not in self.files_to_convert:
+                            self.files_to_convert.append(file_path)
+                            item = QListWidgetItem(f"📁 {file}")
+                            item.setData(Qt.UserRole, file_path)
+                            self.file_list.addItem(item)
+                            folder_added += 1
+                            total_added += 1
+            
+            if folder_added > 0:
+                # 添加文件夹摘要
+                summary_item = QListWidgetItem(f"📂 从 '{os.path.basename(folder_path)}' 添加了 {folder_added} 个文件")
+                summary_item.setForeground(QColor("#3498db"))
+                self.file_list.addItem(summary_item)
+        
+        if total_added > 0:
+            self.update_status(f"拖放添加了 {total_added} 个音频文件")
+        elif file_paths or folder_paths:
+            self.update_status("拖放的文件中没有支持的音频格式")
+        
+        # 滚动到最新添加的项目
+        if self.file_list.count() > 0:
+            self.file_list.scrollToBottom()
         
     def browse_output_dir(self):
         """浏览输出目录"""
