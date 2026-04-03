@@ -61,50 +61,24 @@ class ConverterWorker(QThread):
     def convert_file(self, input_file: str) -> (bool, str):
         """转换单个文件"""
         try:
-            # 检查文件是否存在
-            if not os.path.exists(input_file):
-                return False, f"文件不存在: {input_file}"
+            # 导入converter模块
+            from converter import AudioConverter
             
-            # 获取FFmpeg路径
-            ffmpeg_path = self.get_ffmpeg_path()
-            if not ffmpeg_path:
-                return False, "找不到 FFmpeg，请确保已正确安装"
+            # 创建转换器实例
+            converter = AudioConverter()
             
-            # 生成输出文件名
-            input_path = Path(input_file)
-            output_filename = f"{input_path.stem}_converted.ogg"
-            output_file = os.path.join(self.output_dir, output_filename)
-            
-            # 构建FFmpeg命令
-            cmd = [
-                ffmpeg_path,
-                '-i', input_file,
-                '-ac', str(self.settings.get('channels', 1)),  # 声道数
-                '-ar', str(self.settings.get('sample_rate', 48000)),  # 采样率
-                '-c:a', 'libvorbis',  # OGG编码器
-                '-q:a', str(self.settings.get('quality', 5)),  # 质量 (0-10)
-                '-y',  # 覆盖输出文件
-                output_file
-            ]
-            
-            # 执行转换
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
+            # 使用新的convert_to_format方法
+            success, message = converter.convert_to_format(
+                input_file=input_file,
+                output_format=self.settings.get('format', 'ogg'),
+                output_dir=self.output_dir,
+                channels=self.settings.get('channels', 1),
+                sample_rate=self.settings.get('sample_rate', 48000),
+                quality=self.settings.get('quality', 5),
+                volume=self.settings.get('volume', 1.0)
             )
             
-            if result.returncode == 0:
-                # 检查输出文件
-                if os.path.exists(output_file):
-                    size = os.path.getsize(output_file) / 1024
-                    return True, f"转换成功 ({size:.1f} KB)"
-                else:
-                    return False, "转换成功但输出文件未找到"
-            else:
-                error_msg = result.stderr.split('\n')[-2] if result.stderr else "未知错误"
-                return False, f"转换失败: {error_msg}"
+            return success, message
                 
         except Exception as e:
             return False, f"转换异常: {str(e)}"
@@ -160,9 +134,11 @@ class MainWindow(QMainWindow):
         self.files_to_convert = []
         self.converter_worker = None
         self.settings = {
+            'format': 'ogg',
             'channels': 1,
             'sample_rate': 48000,
             'quality': 5,
+            'volume': 1.0,
             'output_dir': str(Path.home() / "Music" / "Converted")
         }
         
@@ -171,7 +147,7 @@ class MainWindow(QMainWindow):
         
     def init_ui(self):
         """初始化用户界面"""
-        self.setWindowTitle("Music-to-OGG 音频转换器")
+        self.setWindowTitle("Music Converter Pro - 音频转换器")
         self.setGeometry(100, 100, 900, 700)
         
         # 设置应用图标
@@ -188,11 +164,11 @@ class MainWindow(QMainWindow):
         main_layout.setContentsMargins(15, 15, 15, 15)
         
         # 标题
-        title_label = QLabel("🎵 Music-to-OGG 音频转换器")
+        title_label = QLabel("🎵 Music Converter Pro - 音频转换器")
         title_font = QFont("Microsoft YaHei", 16, QFont.Bold)
         title_label.setFont(title_font)
         title_label.setAlignment(Qt.AlignCenter)
-        title_label.setStyleSheet("color: #2c3e50; padding: 10px;")
+        title_label.setStyleSheet("color: #ffffff; padding: 10px;")
         main_layout.addWidget(title_label)
         
         # 分隔线
@@ -276,8 +252,18 @@ class MainWindow(QMainWindow):
         
         settings_layout.addLayout(output_layout)
         
-        # 音频设置
-        audio_layout = QHBoxLayout()
+        # 音频设置 - 第一行
+        audio_row1_layout = QHBoxLayout()
+        
+        # 输出格式
+        format_layout = QVBoxLayout()
+        format_layout.addWidget(QLabel("输出格式:"))
+        self.format_combo = QComboBox()
+        self.format_combo.addItems(["MP3", "OGG", "WAV", "FLAC", "M4A", "AAC", "WMA", "OPUS"])
+        self.format_combo.setCurrentIndex(1)  # 默认OGG
+        self.format_combo.currentIndexChanged.connect(self.update_format)
+        format_layout.addWidget(self.format_combo)
+        audio_row1_layout.addLayout(format_layout)
         
         # 声道数
         channels_layout = QVBoxLayout()
@@ -287,7 +273,7 @@ class MainWindow(QMainWindow):
         self.channels_combo.setCurrentIndex(0)
         self.channels_combo.currentIndexChanged.connect(self.update_channels)
         channels_layout.addWidget(self.channels_combo)
-        audio_layout.addLayout(channels_layout)
+        audio_row1_layout.addLayout(channels_layout)
         
         # 采样率
         sample_rate_layout = QVBoxLayout()
@@ -297,7 +283,13 @@ class MainWindow(QMainWindow):
         self.sample_rate_combo.setCurrentIndex(1)
         self.sample_rate_combo.currentIndexChanged.connect(self.update_sample_rate)
         sample_rate_layout.addWidget(self.sample_rate_combo)
-        audio_layout.addLayout(sample_rate_layout)
+        audio_row1_layout.addLayout(sample_rate_layout)
+        
+        audio_row1_layout.addStretch()
+        settings_layout.addLayout(audio_row1_layout)
+        
+        # 音频设置 - 第二行
+        audio_row2_layout = QHBoxLayout()
         
         # 质量
         quality_layout = QVBoxLayout()
@@ -307,10 +299,59 @@ class MainWindow(QMainWindow):
         self.quality_spin.setValue(5)
         self.quality_spin.valueChanged.connect(self.update_quality)
         quality_layout.addWidget(self.quality_spin)
-        audio_layout.addLayout(quality_layout)
+        audio_row2_layout.addLayout(quality_layout)
         
-        audio_layout.addStretch()
-        settings_layout.addLayout(audio_layout)
+        # 音量调节
+        volume_layout = QVBoxLayout()
+        volume_layout.addWidget(QLabel("音量倍数:"))
+        volume_control_layout = QHBoxLayout()
+        
+        self.volume_slider = QSlider(Qt.Horizontal)
+        self.volume_slider.setRange(10, 300)  # 0.1x 到 3.0x
+        self.volume_slider.setValue(100)  # 1.0x
+        self.volume_slider.setTickPosition(QSlider.TicksBelow)
+        self.volume_slider.setTickInterval(50)
+        self.volume_slider.valueChanged.connect(self.update_volume_from_slider)
+        
+        self.volume_spin = QDoubleSpinBox()
+        self.volume_spin.setRange(0.1, 3.0)
+        self.volume_spin.setSingleStep(0.1)
+        self.volume_spin.setValue(1.0)
+        self.volume_spin.setDecimals(1)
+        self.volume_spin.valueChanged.connect(self.update_volume_from_spin)
+        
+        volume_control_layout.addWidget(self.volume_slider)
+        volume_control_layout.addWidget(self.volume_spin)
+        
+        volume_layout.addLayout(volume_control_layout)
+        audio_row2_layout.addLayout(volume_layout)
+        
+        # 音量预设按钮
+        volume_preset_layout = QVBoxLayout()
+        volume_preset_layout.addWidget(QLabel("预设:"))
+        preset_buttons_layout = QHBoxLayout()
+        
+        self.volume_half_btn = QPushButton("½")
+        self.volume_half_btn.setToolTip("一半音量 (0.5x)")
+        self.volume_half_btn.clicked.connect(lambda: self.set_volume_preset(0.5))
+        
+        self.volume_normal_btn = QPushButton("1")
+        self.volume_normal_btn.setToolTip("正常音量 (1.0x)")
+        self.volume_normal_btn.clicked.connect(lambda: self.set_volume_preset(1.0))
+        
+        self.volume_double_btn = QPushButton("2")
+        self.volume_double_btn.setToolTip("双倍音量 (2.0x)")
+        self.volume_double_btn.clicked.connect(lambda: self.set_volume_preset(2.0))
+        
+        preset_buttons_layout.addWidget(self.volume_half_btn)
+        preset_buttons_layout.addWidget(self.volume_normal_btn)
+        preset_buttons_layout.addWidget(self.volume_double_btn)
+        
+        volume_preset_layout.addLayout(preset_buttons_layout)
+        audio_row2_layout.addLayout(volume_preset_layout)
+        
+        audio_row2_layout.addStretch()
+        settings_layout.addLayout(audio_row2_layout)
         
         settings_group.setLayout(settings_layout)
         main_layout.addWidget(settings_group)
@@ -644,6 +685,35 @@ class MainWindow(QMainWindow):
     def update_quality(self, value):
         """更新质量设置"""
         self.settings['quality'] = value
+    
+    def update_format(self, index):
+        """更新输出格式设置"""
+        formats = ['mp3', 'ogg', 'wav', 'flac', 'm4a', 'aac', 'wma', 'opus']
+        self.settings['format'] = formats[index]
+        
+    def update_volume_from_slider(self, value):
+        """从滑块更新音量设置"""
+        volume = value / 100.0  # 转换为0.1-3.0范围
+        self.settings['volume'] = volume
+        # 更新微调框，但不触发其valueChanged信号
+        self.volume_spin.blockSignals(True)
+        self.volume_spin.setValue(volume)
+        self.volume_spin.blockSignals(False)
+        
+    def update_volume_from_spin(self, value):
+        """从微调框更新音量设置"""
+        self.settings['volume'] = value
+        # 更新滑块，但不触发其valueChanged信号
+        self.volume_slider.blockSignals(True)
+        self.volume_slider.setValue(int(value * 100))
+        self.volume_slider.blockSignals(False)
+        
+    def set_volume_preset(self, volume):
+        """设置音量预设"""
+        self.settings['volume'] = volume
+        # 更新滑块和微调框
+        self.volume_slider.setValue(int(volume * 100))
+        self.volume_spin.setValue(volume)
         
     def start_conversion(self):
         """开始转换"""

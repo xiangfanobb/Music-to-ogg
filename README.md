@@ -1,12 +1,13 @@
-# Music-to-OGG 🎵
+# Music Converter Pro 🎵
 
-一个现代化的音频转换工具，用于将各种音频文件转换为OGG格式。特别适合用于SCP:SL服务器插件的音频使用。
+一个功能强大的音频转换工具，支持任意音频格式转换和音量调节。特别适合用于SCP:SL服务器插件的音频使用。
 
 ## ✨ 特性
 
 - **现代化黑色主题GUI** - 使用PySide6开发的现代化深色界面Windows应用程序
+- **任意格式转换** - 支持MP3, OGG, WAV, FLAC, M4A, AAC, WMA, OPUS等格式互转
+- **音量调节** - 可调节音频文件的音量大小 (0.1x - 3.0x)
 - **批量转换** - 支持同时转换多个文件或整个文件夹
-- **多种格式支持** - 支持MP3, WAV, FLAC, M4A, AAC, WMA等格式
 - **可调参数** - 可调整声道数、采样率、质量等参数
 - **进度显示** - 实时显示转换进度和状态
 - **便携版本** - 提供无需安装的便携版
@@ -68,23 +69,33 @@ python build.py
 ### 命令行版本
 
 ```bash
-# 转换单个文件
-python converter.py input.mp3
+# 转换单个文件为指定格式
+python converter.py input.mp3 -f wav
+
+# 转换并调节音量
+python converter.py song.wav -f mp3 -v 1.5
+
+# 仅调节音量，不转换格式
+python converter.py audio.mp3 --volume-only -v 0.8 --keep-format
 
 # 转换整个文件夹
-python converter.py /path/to/folder -b
+python converter.py /path/to/folder -b -f ogg
 
 # 自定义参数
-python converter.py input.wav -o output_folder -c 2 -r 44100 -q 8
+python converter.py input.wav -o output_folder -f flac -c 2 -r 44100 -q 8 -v 1.2
 ```
 
 #### 命令行参数
 
+- `-f, --format`: 输出格式 (mp3, ogg, wav, flac, m4a, aac, wma, opus，默认ogg)
 - `-o, --output`: 输出目录（默认为输入文件所在目录）
 - `-c, --channels`: 声道数 (1=单声道, 2=立体声，默认1)
 - `-r, --sample-rate`: 采样率 (默认48000)
 - `-q, --quality`: 质量等级 0-10 (默认5)
+- `-v, --volume`: 音量倍数 (0.5=一半音量，1.0=原音量，2.0=两倍音量，默认1.0)
 - `-b, --batch`: 批量转换目录中的所有音频文件
+- `--volume-only`: 仅调节音量，不转换格式
+- `--keep-format`: 调节音量时保持原格式
 
 ## 🔧 系统要求
 
@@ -103,13 +114,15 @@ python converter.py input.wav -o output_folder -c 2 -r 44100 -q 8
 
 ```
 Music-to-ogg/
-├── main.py              # GUI主程序
-├── converter.py         # 核心转换模块
+├── main.py              # GUI主程序 (支持任意格式转换和音量调节)
+├── converter.py         # 核心转换模块 (支持8种格式和音量调节)
 ├── run.py              # 启动脚本
 ├── build.py            # 构建脚本
 ├── requirements.txt    # Python依赖
 ├── app.ico            # 应用程序图标
 ├── README.md          # 说明文档
+├── QUICKSTART.md      # 快速开始指南
+├── PROJECT_SUMMARY.md # 项目总结
 └── LICENSE            # 许可证文件
 ```
 
