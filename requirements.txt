@@ -1,0 +1,4 @@
+# 项目依赖
+pyside6>=6.5.0
+pyinstaller>=5.10.0
+pillow>=9.5.0
