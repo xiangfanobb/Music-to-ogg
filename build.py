@@ -163,13 +163,14 @@ def create_installer():
         return
     
     # English-only ISS script (no Chinese language file dependency)
+    # Note: {} in AppId must be doubled to escape them in ISS
     iss_content = """[Setup]
-AppId={E8C4A3B1-1234-5678-90AB-CDEF12345678}
+AppId={{E8C4A3B1-1234-5678-90AB-CDEF12345678}}
 AppName=Music-to-OGG
 AppVersion=1.0.0
 AppPublisher=xiangfanobb
 AppPublisherURL=https://github.com/xiangfanobb/Music-to-ogg
-DefaultDirName={autopf}\\Music-to-OGG
+DefaultDirName={{autopf}}\\Music-to-OGG
 DefaultGroupName=Music-to-OGG
 AllowNoIcons=yes
 OutputDir=Output
@@ -182,19 +183,19 @@ WizardStyle=modern
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "desktopicon"; Description: "{{cm:CreateDesktopIcon}}"; GroupDescription: "{{cm:AdditionalIcons}}"; Flags: unchecked
 
 [Files]
-Source: "dist\\Music-to-OGG.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "app.ico"; DestDir: "{app}"; Flags: ignoreversion
+Source: "dist\\Music-to-OGG.exe"; DestDir: "{{app}}"; Flags: ignoreversion
+Source: "app.ico"; DestDir: "{{app}}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\\Music-to-OGG"; Filename: "{app}\\Music-to-OGG.exe"; IconFilename: "{app}\\app.ico"
-Name: "{group}\\Uninstall Music-to-OGG"; Filename: "{uninstallexe}"
-Name: "{commondesktop}\\Music-to-OGG"; Filename: "{app}\\Music-to-OGG.exe"; IconFilename: "{app}\\app.ico"; Tasks: desktopicon
+Name: "{{group}}\\Music-to-OGG"; Filename: "{{app}}\\Music-to-OGG.exe"; IconFilename: "{{app}}\\app.ico"
+Name: "{{group}}\\Uninstall Music-to-OGG"; Filename: "{{uninstallexe}}"
+Name: "{{commondesktop}}\\Music-to-OGG"; Filename: "{{app}}\\Music-to-OGG.exe"; IconFilename: "{{app}}\\app.ico"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\\Music-to-OGG.exe"; Description: "{cm:LaunchProgram,Music-to-OGG}"; Flags: nowait postinstall skipifsilent
+Filename: "{{app}}\\Music-to-OGG.exe"; Description: "{{cm:LaunchProgram,Music-to-OGG}}"; Flags: nowait postinstall skipifsilent
 """
     
     iss_file = Path("setup.iss")
