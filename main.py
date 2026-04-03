@@ -229,14 +229,18 @@ class MainWindow(QMainWindow):
         self.file_list.setMinimumHeight(200)
         self.file_list.setStyleSheet("""
             QListWidget {
-                border: 1px solid #ddd;
+                border: 1px solid #444444;
                 border-radius: 5px;
                 padding: 5px;
-                background-color: white;
+                background-color: #2d2d2d;
+                color: #ffffff;
             }
             QListWidget::item {
                 padding: 5px;
-                border-bottom: 1px solid #eee;
+                border-bottom: 1px solid #333333;
+            }
+            QListWidget::item:hover {
+                background-color: #3d3d3d;
             }
             QListWidget::item:selected {
                 background-color: #3498db;
@@ -257,7 +261,13 @@ class MainWindow(QMainWindow):
         output_layout.addWidget(QLabel("输出目录:"))
         
         self.output_dir_label = QLabel(self.settings['output_dir'])
-        self.output_dir_label.setStyleSheet("padding: 5px; background-color: #f8f9fa; border-radius: 3px;")
+        self.output_dir_label.setStyleSheet("""
+            padding: 5px; 
+            background-color: #2d2d2d; 
+            border-radius: 3px;
+            border: 1px solid #444444;
+            color: #cccccc;
+        """)
         output_layout.addWidget(self.output_dir_label, 1)
         
         self.browse_output_btn = QPushButton("浏览...")
@@ -314,17 +324,24 @@ class MainWindow(QMainWindow):
         self.progress_bar.setTextVisible(True)
         
         self.status_label = QLabel("准备就绪")
-        self.status_label.setStyleSheet("padding: 5px; color: #666;")
+        self.status_label.setStyleSheet("""
+            padding: 5px; 
+            color: #cccccc;
+            background-color: #2d2d2d;
+            border-radius: 3px;
+            border: 1px solid #444444;
+        """)
         
         self.log_text = QTextEdit()
         self.log_text.setMaximumHeight(150)
         self.log_text.setReadOnly(True)
         self.log_text.setStyleSheet("""
             QTextEdit {
-                border: 1px solid #ddd;
+                border: 1px solid #444444;
                 border-radius: 5px;
                 padding: 5px;
-                background-color: #f8f9fa;
+                background-color: #2d2d2d;
+                color: #ffffff;
                 font-family: Consolas, 'Courier New', monospace;
             }
         """)
@@ -348,12 +365,19 @@ class MainWindow(QMainWindow):
                 font-weight: bold;
                 border-radius: 5px;
                 padding: 10px;
+                border: 1px solid #1e8449;
             }
             QPushButton:hover {
                 background-color: #219653;
+                border: 1px solid #196f3d;
+            }
+            QPushButton:pressed {
+                background-color: #1e8449;
             }
             QPushButton:disabled {
-                background-color: #95a5a6;
+                background-color: #2d2d2d;
+                color: #666666;
+                border: 1px solid #333333;
             }
         """)
         self.start_btn.clicked.connect(self.start_conversion)
@@ -368,18 +392,42 @@ class MainWindow(QMainWindow):
                 font-weight: bold;
                 border-radius: 5px;
                 padding: 10px;
+                border: 1px solid #c0392b;
             }
             QPushButton:hover {
                 background-color: #c0392b;
+                border: 1px solid #a93226;
+            }
+            QPushButton:pressed {
+                background-color: #a93226;
             }
             QPushButton:disabled {
-                background-color: #95a5a6;
+                background-color: #2d2d2d;
+                color: #666666;
+                border: 1px solid #333333;
             }
         """)
         self.stop_btn.clicked.connect(self.stop_conversion)
         
         self.open_output_btn = QPushButton("📂 打开输出目录")
         self.open_output_btn.setMinimumHeight(50)
+        self.open_output_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #3498db;
+                color: white;
+                font-weight: bold;
+                border-radius: 5px;
+                padding: 10px;
+                border: 1px solid #2980b9;
+            }
+            QPushButton:hover {
+                background-color: #2980b9;
+                border: 1px solid #2471a3;
+            }
+            QPushButton:pressed {
+                background-color: #2471a3;
+            }
+        """)
         self.open_output_btn.clicked.connect(self.open_output_directory)
         
         control_layout.addWidget(self.start_btn)
@@ -398,45 +446,113 @@ class MainWindow(QMainWindow):
         """创建水平分隔线"""
         line = QWidget()
         line.setFixedHeight(1)
-        line.setStyleSheet("background-color: #ddd;")
+        line.setStyleSheet("background-color: #444444;")
         return line
         
     def apply_stylesheet(self):
-        """应用样式表"""
+        """应用黑色主题样式表"""
         self.setStyleSheet("""
+            /* 主窗口 */
             QMainWindow {
-                background-color: #f5f7fa;
+                background-color: #121212;
             }
+            
+            /* 分组框 */
             QGroupBox {
                 font-weight: bold;
-                border: 2px solid #ddd;
+                color: #ffffff;
+                border: 2px solid #333333;
                 border-radius: 8px;
                 margin-top: 10px;
                 padding-top: 10px;
+                background-color: #1e1e1e;
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
                 left: 10px;
                 padding: 0 5px 0 5px;
+                color: #ffffff;
             }
+            
+            /* 按钮 */
             QPushButton {
                 padding: 8px 15px;
                 border-radius: 5px;
-                border: 1px solid #ddd;
-                background-color: #ecf0f1;
+                border: 1px solid #444444;
+                background-color: #2d2d2d;
+                color: #ffffff;
                 font-weight: bold;
             }
             QPushButton:hover {
-                background-color: #d5dbdb;
+                background-color: #3d3d3d;
+                border: 1px solid #555555;
             }
+            QPushButton:pressed {
+                background-color: #1d1d1d;
+            }
+            QPushButton:disabled {
+                background-color: #252525;
+                color: #666666;
+                border: 1px solid #333333;
+            }
+            
+            /* 下拉框和微调框 */
             QComboBox, QSpinBox {
                 padding: 5px;
-                border: 1px solid #ddd;
+                border: 1px solid #444444;
                 border-radius: 3px;
-                background-color: white;
+                background-color: #2d2d2d;
+                color: #ffffff;
+                selection-background-color: #3498db;
             }
+            QComboBox::drop-down {
+                border: none;
+            }
+            QComboBox::down-arrow {
+                image: none;
+                border-left: 5px solid transparent;
+                border-right: 5px solid transparent;
+                border-top: 5px solid #ffffff;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #2d2d2d;
+                color: #ffffff;
+                selection-background-color: #3498db;
+                border: 1px solid #444444;
+            }
+            
+            /* 标签 */
             QLabel {
-                color: #2c3e50;
+                color: #ffffff;
+            }
+            
+            /* 进度条 */
+            QProgressBar {
+                border: 1px solid #444444;
+                border-radius: 3px;
+                text-align: center;
+                background-color: #2d2d2d;
+                color: #ffffff;
+            }
+            QProgressBar::chunk {
+                background-color: #3498db;
+                border-radius: 3px;
+            }
+            
+            /* 文本编辑框 */
+            QTextEdit {
+                border: 1px solid #444444;
+                border-radius: 5px;
+                padding: 5px;
+                background-color: #2d2d2d;
+                color: #ffffff;
+                font-family: Consolas, 'Courier New', monospace;
+            }
+            
+            /* 状态栏 */
+            QStatusBar {
+                background-color: #1e1e1e;
+                color: #cccccc;
             }
         """)
         
