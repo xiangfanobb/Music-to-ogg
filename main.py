@@ -18,7 +18,8 @@ from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QFileDialog, QListWidget, QListWidgetItem,
     QProgressBar, QMessageBox, QGroupBox, QCheckBox, QSpinBox,
-    QDoubleSpinBox, QSlider, QComboBox, QTextEdit, QSplitter, QStyleFactory
+    QDoubleSpinBox, QSlider, QComboBox, QTextEdit, QSplitter, QStyleFactory,
+    QSizePolicy
 )
 from PySide6.QtCore import Qt, QThread, Signal, QTimer, QSize, QMimeData, QUrl
 from PySide6.QtGui import QFont, QIcon, QPalette, QColor, QDragEnterEvent, QDropEvent
@@ -200,7 +201,8 @@ class MainWindow(QMainWindow):
     def init_ui(self):
         """初始化用户界面"""
         self.setWindowTitle("Music Converter Pro - 音频转换器")
-        self.setGeometry(100, 100, 900, 700)
+        self.setMinimumSize(700, 500)
+        self.resize(900, 750)
         
         # 设置应用图标
         if os.path.exists("app.ico"):
@@ -254,7 +256,9 @@ class MainWindow(QMainWindow):
         
         # 文件列表 - 支持拖放
         self.file_list = DragDropListWidget()
-        self.file_list.setMinimumHeight(200)
+        self.file_list.setSizePolicy(
+            QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        )
         self.file_list.setStyleSheet("""
             QListWidget {
                 border: 2px dashed #555555;
@@ -299,10 +303,9 @@ class MainWindow(QMainWindow):
         list_layout.addWidget(drop_hint_label)
         
         file_layout.addWidget(list_container)
-        file_layout.addWidget(self.file_list)
         
         file_group.setLayout(file_layout)
-        main_layout.addWidget(file_group)
+        main_layout.addWidget(file_group, 3)  # stretch=3, 文件区占大部分空间
         
         # 设置区域
         settings_group = QGroupBox("⚙️ 转换设置")
@@ -450,7 +453,6 @@ class MainWindow(QMainWindow):
         """)
         
         self.log_text = QTextEdit()
-        self.log_text.setMaximumHeight(150)
         self.log_text.setReadOnly(True)
         self.log_text.setStyleSheet("""
             QTextEdit {
@@ -468,7 +470,7 @@ class MainWindow(QMainWindow):
         progress_layout.addWidget(self.log_text)
         
         progress_group.setLayout(progress_layout)
-        main_layout.addWidget(progress_group)
+        main_layout.addWidget(progress_group, 2)  # stretch=2, 进度区域可伸缩
         
         # 控制按钮
         control_layout = QHBoxLayout()
